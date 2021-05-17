@@ -1,0 +1,13 @@
+{
+    "gastos_fijos":{
+        "Arriendo": 570000,
+        "Salario Empleada": 942000,
+        "Provisiones Liquidación": 217000,
+        "Seguridad Social": 325000, 
+        "Servicios Publicos": 150000,
+        "Telesentinel": 123000,
+        "Internet Claro": 85000,
+        "Seguro Almacén": 40000
+    }
+
+}

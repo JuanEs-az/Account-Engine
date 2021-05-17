@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="image">
+    <file>Excel.png</file>
+  </qresource>
+</RCC>
