@@ -44,6 +44,8 @@ def getInventario( doc ):
 def uploadInventario( doc, newInv ):
     sheet = doc['Inventario']
     cont = 2
+    totalEfectivo = 0
+    totalBancolombia = 0
     while True:
         referencia = sheet[f'A{cont}'].value
         if not referencia:
@@ -51,7 +53,16 @@ def uploadInventario( doc, newInv ):
         newProducto = newInv[referencia]
         sheet[f'C{cont}'] = newProducto["VENTAS"]
         sheet[f'D{cont}'] = newProducto["CANTIDAD"]
+        sheet[f'H{cont}'] = newProducto["EFECTIVO"]
+        sheet[f'I{cont}'] = newProducto["BANCOLOMBIA"]
+        totalEfectivo += newProducto["EFECTIVO"] if newProducto["EFECTIVO"] else 0
+        totalBancolombia += newProducto["BANCOLOMBIA"] if newProducto["BANCOLOMBIA"] else 0
         cont += 1
+    return {
+        "efectivo": totalEfectivo,
+        "bancolombia": totalBancolombia
+    }
+    
 
 #AÑADIMOS A BANCOLOMBIA TODAS LAS TRANSACCIONES DE VENTAS
 def uploadBancolombia( doc, transacciones ):
@@ -68,13 +79,12 @@ def uploadBancolombia( doc, transacciones ):
         sheet[f'C{puntoActual}'] = f'${transaccion["VALOR PRODUCTO"] * transaccion["CANTIDAD"]}'
         puntoActual += 1
 
-def barrierVentas( doc ):
+def barrierVentas( doc, inventario):
     sheet = doc['Ventas']
     cont = 2
     bancolombia = []
     registro = {}
     #OBTENEMOS EL INVENTARIO PARA EDITAR LOS VALORES DE LOS PRODUCTOS
-    inventario = getInventario( doc )
     while True:
         id_ = sheet[f'A{cont}'].value
         checked = sheet[f'L{cont}']
@@ -96,7 +106,6 @@ def barrierVentas( doc ):
             }
         }
         producto = inventario[ fila['REFERENCIA'] ]
-        
         #HACEMOS LAS EDICIONES RESPECTIVAS AL PRODUCTO (CON CONDICIONALES EN CASO DE ESTAR VACÍOS)
         if producto["VENTAS"]:
             producto["VENTAS"] += fila["CANTIDAD"]
@@ -107,16 +116,34 @@ def barrierVentas( doc ):
             producto["CANTIDAD"] -= fila["CANTIDAD"]
         else:
             producto["CANTIDAD"] = -fila["CANTIDAD"]
-            
-        if fila["FORMA DE PAGO"].upper() == "BANCOLOMBIA":
+
+        valor = fila["CANTIDAD"] * fila["VALOR PRODUCTO"]
+
+        if  fila["FORMA DE PAGO"] == "EFECTIVO":
+            if producto["EFECTIVO"]:
+                producto["EFECTIVO"] += valor
+            else:
+                producto["EFECTIVO"] = valor
+        elif  fila["FORMA DE PAGO"] == "BANCOLOMBIA":
+            if producto["BANCOLOMBIA"]:
+                producto["BANCOLOMBIA"] += valor
+            else:
+                producto["BANCOLOMBIA"] = valor
+
             fila["DESCRIPCION"] = producto["DESCRIPCION"]
             bancolombia.append( fila )
             cont += 1
-            continue
+            continue   
+
         registro[id_] = fila
         cont += 1
+    resultInv = uploadInventario( doc, inventario )
     uploadBancolombia( doc, bancolombia )
-    return  registro
+    return  {
+        "registro": registro,
+        "efectivo": resultInv["efectivo"],
+        "bancolombia": resultInv["bancolombia"]
+    }
 
 def uploadGastosFijos( sheet ):
     json = getJSON( getFile('datos.json', 'r') )
@@ -142,19 +169,39 @@ def uploadGastosAdicionales( sheet ):
         cont += 1
     return total
     
-def uploadGastos( doc ):
+def uploadGastosBanco( sheet ):
+    cont = 3
+    total = 0
+    while True:
+        gasto = sheet[f'E{cont}'].value
+        valor = sheet[f'F{cont}'].value
+        if not gasto:
+            break
+        total += valor
+        cont += 1
+    return total
+
+def uploadGastos( doc, inventario, data ):
     sheet = doc['Gastos']
-    totalGastos = uploadGastosFijos( sheet )
-    totalGastos += uploadGastosAdicionales( sheet )
-    sheet['E3'] = totalGastos
+    totalGastosEfectivo = uploadGastosFijos( sheet )
+    totalGastosEfectivo += uploadGastosAdicionales( sheet )
+    totalGastosBanco = uploadGastosBanco( sheet )
+    totalEfectivo = data["efectivo"]
+    totalBancolombia = data["bancolombia"]
+    sheet['G6'] = totalGastosEfectivo
+    sheet['H6'] = totalGastosBanco
+    sheet['G3'] = totalEfectivo
+    sheet['H3'] = totalBancolombia
+
 
 
 def init( docName ):
     data = getDocData( docName )
     doc = data['get']
     saveDoc = data['save']
-    barrierVentas( doc )
-    uploadGastos( doc )
+    inventario = getInventario( doc )
+    ventasData = barrierVentas( doc, inventario )
+    uploadGastos( doc, inventario, ventasData )
     saveDoc()
 
 
