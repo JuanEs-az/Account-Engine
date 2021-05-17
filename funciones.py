@@ -53,10 +53,25 @@ def uploadInventario( doc, newInv ):
         newProducto = newInv[referencia]
         sheet[f'C{cont}'] = newProducto["VENTAS"]
         sheet[f'D{cont}'] = newProducto["CANTIDAD"]
-        sheet[f'H{cont}'] = newProducto["EFECTIVO"]
-        sheet[f'I{cont}'] = newProducto["BANCOLOMBIA"]
-        totalEfectivo += newProducto["EFECTIVO"] if newProducto["EFECTIVO"] else 0
-        totalBancolombia += newProducto["BANCOLOMBIA"] if newProducto["BANCOLOMBIA"] else 0
+        try:
+            sheet[f'H{cont}'] = newProducto["EFECTIVO"]
+        except:
+            pass
+
+        try:
+            sheet[f'I{cont}'] = newProducto["BANCOLOMBIA"]
+        except:
+            pass
+
+        try:
+            totalEfectivo += newProducto["EFECTIVO"]
+        except:
+            pass
+
+        try:
+            totalBancolombia += newProducto["BANCOLOMBIA"]
+        except:
+            pass
         cont += 1
     return {
         "efectivo": totalEfectivo,
@@ -120,16 +135,16 @@ def barrierVentas( doc, inventario):
         valor = fila["CANTIDAD"] * fila["VALOR PRODUCTO"]
 
         if  fila["FORMA DE PAGO"] == "EFECTIVO":
-            if producto["EFECTIVO"]:
+            try:
                 producto["EFECTIVO"] += valor
-            else:
+            except:
                 producto["EFECTIVO"] = valor
         elif  fila["FORMA DE PAGO"] == "BANCOLOMBIA":
-            if producto["BANCOLOMBIA"]:
+            try:
                 producto["BANCOLOMBIA"] += valor
-            else:
+            except:
                 producto["BANCOLOMBIA"] = valor
-
+            sheet.delete_rows(cont, 1)
             fila["DESCRIPCION"] = producto["DESCRIPCION"]
             bancolombia.append( fila )
             cont += 1

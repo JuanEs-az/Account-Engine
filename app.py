@@ -20,6 +20,7 @@ class App( QDialog ):
         except PermissionError:
             self.app.advices.setStyleSheet("color: red;")
             self.app.advices.setText("Procura tener cerrado el documento excel antes de comenzar.")
+        """
         except Exception as e:
             if type(e).__name__ == "InvalidFileException":
                 self.app.advices.setStyleSheet("color: gold;")
@@ -29,7 +30,7 @@ class App( QDialog ):
                 self.app.advices.setStyleSheet("color: red;")
                 self.app.advices.setText(f"Se ha detectado un error desconocido. { type( e ).__name__ }")
         self.app.comenzar.setEnabled(True)
-        
+        """
 
 
 if __name__ == "__main__":
