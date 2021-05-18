@@ -90,7 +90,7 @@ def uploadBancolombia( doc, transacciones ):
     for transaccion in transacciones:
         fecha = transaccion["FECHA"]
         sheet[f'A{puntoActual}'] = f'{fecha["DIA"]}/{fecha["MES"]}/{fecha["AÑO"]}'
-        sheet[f'B{puntoActual}'] = f'Venta de {transaccion["CANTIDAD"]} unidades de {transaccion["DESCRIPCION"]}'
+        sheet[f'B{puntoActual}'] = f'Venta de {transaccion["CANTIDAD"]} unidades de {transaccion["DESCRIPCION"]} '
         sheet[f'C{puntoActual}'] = f'${transaccion["VALOR PRODUCTO"] * transaccion["CANTIDAD"]}'
         puntoActual += 1
 
@@ -101,14 +101,18 @@ def barrierVentas( doc, inventario):
     registro = {}
     #OBTENEMOS EL INVENTARIO PARA EDITAR LOS VALORES DE LOS PRODUCTOS
     while True:
+
         id_ = sheet[f'A{cont}'].value
         checked = sheet[f'L{cont}']
+        #Sino hay más ids entonces continúa
         if not id_:
             break
+        #Si tiene el si en revisado continúa
         if checked.value == "SI":
             cont += 1
             continue
         sheet[f'L{cont}'] = "SI"
+        #Guardamos los datos en la fila
         fila = {
             "REFERENCIA": sheet[f'B{cont}'].value,
             "CANTIDAD": sheet[f'E{cont}'].value,
@@ -120,13 +124,19 @@ def barrierVentas( doc, inventario):
                 "AÑO": sheet[f'I{cont}'].value
             }
         }
+        #Si el producto no tiene valor entonces que se tome del inventario
         producto = inventario[ fila['REFERENCIA'] ]
+        if not fila["VALOR PRODUCTO"]:
+            fila["VALOR PRODUCTO"] = producto["VALOR VENTA"]
+            sheet[f'F{cont}'] = producto["VALOR VENTA"]
         #HACEMOS LAS EDICIONES RESPECTIVAS AL PRODUCTO (CON CONDICIONALES EN CASO DE ESTAR VACÍOS)
+
+        #Alteramos las ventas para que estas se vean reflejadas en el inventario
         if producto["VENTAS"]:
             producto["VENTAS"] += fila["CANTIDAD"]
         else:
             producto["VENTAS"] = fila["CANTIDAD"]
-
+        #Alteramos las cantiddades para que estas se vean reflejadas en el inventario
         if producto["CANTIDAD"]:
             producto["CANTIDAD"] -= fila["CANTIDAD"]
         else:
@@ -144,7 +154,6 @@ def barrierVentas( doc, inventario):
                 producto["BANCOLOMBIA"] += valor
             except:
                 producto["BANCOLOMBIA"] = valor
-            sheet.delete_rows(cont, 1)
             fila["DESCRIPCION"] = producto["DESCRIPCION"]
             bancolombia.append( fila )
             cont += 1
